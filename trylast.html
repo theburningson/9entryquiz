@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>9 Entry Quiz by Burning Son</title>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@600&family=Roboto&display=swap" rel="stylesheet">
+  <style>
+    body {
+      font-family: 'Roboto', sans-serif;
+      background: linear-gradient(135deg, #ececec, #d6e4f0);
+      margin: 0;
+      padding: 0;
+    }
+    .container {
+      max-width: 800px;
+      margin: 80px auto;
+      background: #fff;
+      padding: 40px;
+      border-radius: 15px;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+      text-align: center;
+    }
+    h1 {
+      font-family: 'Poppins', sans-serif;
+      font-size: 40px;
+      margin-bottom: 30px;
+      color: #222;
+    }
+    .rules {
+      font-size: 20px;
+      line-height: 1.8;
+      color: #333;
+      margin: 30px auto;
+      text-align: center;
+    }
+    .rules ul {
+      list-style: none;
+      padding: 0;
+    }
+    .rules li {
+      margin: 12px 0;
+    }
+    button {
+      padding: 14px 30px;
+      margin-top: 25px;
+      border: none;
+      border-radius: 10px;
+      background: #0077b6;
+      color: #fff;
+      font-size: 20px;
+      cursor: pointer;
+      transition: background 0.3s ease;
+    }
+    button:hover {
+      background: #023e8a;
+    }
+    .hidden {
+      display: none;
+    }
+  </style>
+</head>
+<body>
+
+<!-- Home Page -->
+<div id="home" class="container">
+  <h1>9 Entry Quiz by Burning Son</h1>
+  <div class="rules">
+    <h2>Rules</h2>
+    <ul>
+      <li>Quiz runs in exam mode — answers revealed only after completion.</li>
+      <li>8 questions with a 15‑second timer each.</li>
+      <li>If time runs out → auto wrong.</li>
+      <li>9th question is text input, no timer, submit button.</li>
+      <li>Scorecard at the end with warning message.</li>
+      <li>Review option shows correct/incorrect answers with detailed logic explanation.</li>
+    </ul>
+  </div>
+  <button onclick="startQuiz()">Start Quiz</button>
+</div>
+<!-- Quiz Page -->
+<div id="quiz" class="container hidden">
+  <h2 id="question"></h2>
+  <div id="options" style="margin-top:20px;"></div>
+  <div id="timer" class="timer" style="font-size:20px; margin-top:15px; font-weight:bold;"></div>
+  <div id="textInput" class="hidden" style="margin-top:20px;">
+    <input type="text" id="answerInput" placeholder="Type your answer" style="padding:10px; font-size:18px; border-radius:8px; border:1px solid #aaa;">
+    <button onclick="submitTextAnswer()">Submit</button>
+  </div>
+</div>
+
+<!-- Result Page -->
+<div id="result" class="container hidden">
+  <h2>Scorecard</h2>
+  <div id="score" style="font-size:22px; margin:20px 0;"></div>
+  <p style="color:#b22222; font-weight:bold;">⚠ Do not try to play again because questions are same.</p>
+  <button onclick="retryQuiz()">Retry</button>
+  <button onclick="showReview()">Review</button>
+</div>
+
+<!-- Review Page -->
+<div id="review" class="container hidden">
+  <h2>Review Answers</h2>
+  <div id="reviewContent" style="margin-top:20px; text-align:left;"></div>
+  <button onclick="retryQuiz()">Retry</button>
+</div>
+<script>
+const questions = [
+  {q:"Capital city of India?",options:["Delhi","Mumbai","Kolkata","Chennai"],answer:0,logic:"Delhi is the capital of India because it is the official seat of government and has been designated as the capital since 1911."},
+  {q:"Largest continent by area?",options:["Asia","Africa","Europe","North America"],answer:0,logic:"Asia is the largest continent, covering about 30% of Earth's land area."},
+  {q:"Which month has 28 days?",options:["February","January","All months","December"],answer:2,logic:"Every month has at least 28 days, so the trick is that February is not the only one."},
+  {q:"If you pass the person in 2nd place?",options:["1st","2nd","3rd","4th"],answer:1,logic:"Passing the person in 2nd place makes you 2nd, not 1st."},
+  {q:"Number with letters in alphabetical order?",options:["Forty","Twenty","Thirty","Sixty"],answer:0,logic:"The letters in 'Forty' are arranged alphabetically: F, O, R, T, Y."},
+  {q:"Comes once in a minute, twice in a moment?",options:["Letter M","Letter O","Letter T","Letter N"],answer:0,logic:"The letter 'M' appears once in 'minute' and twice in 'moment'."},
+  {q:"Before Everest was discovered, highest mountain?",options:["Mount Everest","K2","Kangchenjunga","Makalu"],answer:0,logic:"Mount Everest was always the highest mountain, even before it was discovered."},
+  {q:"Mary's father has 5 daughters Nana, Nani, Nene, Nono. Fifth?",options:["Nunu","Mary","Nina","Neno"],answer:1,logic:"The riddle says 'Mary's father', so the fifth daughter is Mary."},
+  {q:"Begins with T, ends with T, has Tea in it?",text:true,answer:"teapot",logic:"The word 'teapot' begins with T, ends with T, and contains 'tea' inside."}
+];
+
+let current=0,score=0,userAnswers=[],timerInterval;
+
+function startQuiz(){
+  document.getElementById("home").classList.add("hidden");
+  document.getElementById("quiz").classList.remove("hidden");
+  showQuestion();
+}
+
+function showQuestion(){
+  const q=questions[current];
+  document.getElementById("question").innerText=q.q;
+  document.getElementById("options").innerHTML="";
+  document.getElementById("textInput").classList.add("hidden");
+  document.getElementById("timer").innerText="";
+  if(q.text){
+    document.getElementById("textInput").classList.remove("hidden");
+  } else {
+    q.options.forEach((opt,i)=>{
+      const btn=document.createElement("button");
+      btn.innerText=opt;
+      btn.style.display="block";
+      btn.style.width="100%";
+      btn.style.margin="10px auto";
+      btn.style.padding="12px";
+      btn.style.fontSize="18px";
+      btn.style.borderRadius="8px";
+      btn.style.border="1px solid #aaa";
+      btn.style.cursor="pointer";
+      btn.onclick=()=>selectAnswer(i);
+      document.getElementById("options").appendChild(btn);
+    });
+    startTimer();
+  }
+}
+
+function startTimer(){
+  let time=15;
+  document.getElementById("timer").innerText="Time left: "+time+"s";
+  timerInterval=setInterval(()=>{
+    time--;
+    document.getElementById("timer").innerText="Time left: "+time+"s";
+    if(time<=0){
+      clearInterval(timerInterval);
+      userAnswers.push(null);
+      nextQuestion();
+    }
+  },1000);
+}
+
+function selectAnswer(i){
+  clearInterval(timerInterval);
+  userAnswers.push(i);
+  nextQuestion();
+}
+
+function submitTextAnswer(){
+  const val=document.getElementById("answerInput").value.trim().toLowerCase();
+  userAnswers.push(val);
+  nextQuestion();
+}
+
+function nextQuestion(){
+  current++;
+  if(current<questions.length){
+    showQuestion();
+  } else {
+    finishQuiz();
+  }
+}
+
+function finishQuiz(){
+  document.getElementById("quiz").classList.add("hidden");
+  document.getElementById("result").classList.remove("hidden");
+  score=0;
+  questions.forEach((q,i)=>{
+    if(q.text){
+      if(userAnswers[i]===q.answer) score++;
+    } else {
+      if(userAnswers[i]===q.answer) score++;
+    }
+  });
+  document.getElementById("score").innerText="Score: "+score+"/"+questions.length;
+}
+
+function retryQuiz(){
+  current=0;score=0;userAnswers=[];
+  document.getElementById("result").classList.add("hidden");
+  document.getElementById("review").classList.add("hidden");
+  document.getElementById("quiz").classList.remove("hidden");
+  showQuestion();
+}
+
+function showReview(){
+  document.getElementById("result").classList.add("hidden");
+  document.getElementById("review").classList.remove("hidden");
+  const reviewDiv=document.getElementById("reviewContent");
+  reviewDiv.innerHTML="";
+  questions.forEach((q,i)=>{
+    const card=document.createElement("div");
+    card.style.border="1px solid #ccc";
+    card.style.borderRadius="10px";
+    card.style.padding="15px";
+    card.style.margin="15px 0";
+    card.style.background="#f9f9f9";
+    card.innerHTML="<h3>"+q.q+"</h3>";
+    if(q.text){
+      if(userAnswers[i]===q.answer){
+        card.innerHTML+="<p style='color:green; font-weight:bold;'>Your Answer: "+userAnswers[i]+"</p>";
+      } else {
+        card.innerHTML+="<p style='color:red; font-weight:bold;'>Your Answer: "+userAnswers[i]+"</p>";
+        card.innerHTML+="<p style='color:green; font-weight:bold;'>Correct Answer: "+q.answer+"</p>";
+      }
+    } else {
+      q.options.forEach((opt,j)=>{
+        let style="padding:8px; margin:5px 0; border-radius:6px; border:1px solid #aaa;";
+        if(userAnswers[i]===j && j!==q.answer) style="padding:8px; margin:5px 0; border-radius:6px; border:2px solid red; background:#ffe5e5;";
+        if(j===q.answer) style="padding:8px; margin:5px 0; border-radius:6px; border:2px solid green; background:#e5ffe5;";
+        card.innerHTML+="<div style='"+style+"'>"+opt+"</div>";
+      });
+    }
+    card.innerHTML+="<p style='margin-top:10px; font-size:16px; color:#333;'><b>Explanation:</b> "+q.logic+"</p>";
+    reviewDiv.appendChild(card);
+  });
+}
+</script>
+</body>
+</html>
